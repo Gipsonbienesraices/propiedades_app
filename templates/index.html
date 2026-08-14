@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propiedades Disponibles</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Sistema de Propiedades</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('registrar') }}">Registrar Nueva Propiedad</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Propiedades Disponibles</h1>
+            <a href="{{ url_for('registrar') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Registrar Propiedad
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if propiedades %}
+            <div class="row">
+                {% for propiedad in propiedades %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            {% if propiedad.imagenes %}
+                                <div id="carousel{{ propiedad.id }}" class="carousel slide" data-bs-ride="carousel">
+                                    <div class="carousel-inner">
+                                        {% for imagen in propiedad.imagenes %}
+                                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                                <img src="{{ url_for('uploaded_file', filename=imagen) }}" 
+                                                     class="d-block w-100" 
+                                                     alt="Imagen de propiedad" 
+                                                     style="height: 200px; object-fit: cover;">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if propiedad.imagenes|length > 1 %}
+                                        <button class="carousel-control-prev" type="button" data-bs-target="#carousel{{ propiedad.id }}" data-bs-slide="prev">
+                                            <span class="carousel-control-prev-icon"></span>
+                                        </button>
+                                        <button class="carousel-control-next" type="button" data-bs-target="#carousel{{ propiedad.id }}" data-bs-slide="next">
+                                            <span class="carousel-control-next-icon"></span>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <span class="text-muted">Sin imágenes</span>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="card-body">
+                                <h5 class="card-title">{{ propiedad.titulo }}</h5>
+                                <p class="card-text">
+                                    <strong>Precio:</strong> ${{ "{:,.2f}".format(propiedad.precio) }}<br>
+                                    <strong>Ubicación:</strong> {{ propiedad.ubicacion }}<br>
+                                    <strong>Tipo:</strong> {{ propiedad.tipo_propiedad }}<br>
+                                    <strong>Operación:</strong> {{ propiedad.operacion }}
+                                    {% if propiedad.recamaras is not none %}
+                                        <br><strong>Recámaras:</strong> {{ propiedad.recamaras }}
+                                    {% endif %}
+                                    {% if propiedad.banos is not none %}
+                                        <br><strong>Baños:</strong> {{ propiedad.banos }}
+                                    {% endif %}
+                                </p>
+                                {% if propiedad.descripcion %}
+                                    <p class="card-text text-muted small">{{ propiedad.descripcion }}</p>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer text-muted small">
+                                Registrada: {{ propiedad.fecha_creacion }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <h4 class="alert-heading">No hay propiedades registradas</h4>
+                <p>Comienza registrando tu primera propiedad usando el botón de arriba.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
