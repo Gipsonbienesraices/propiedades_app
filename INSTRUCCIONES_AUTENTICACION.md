@@ -25,7 +25,7 @@ He implementado un sistema completo de autenticación que protege todas las func
 - **Usuario:** `admin`
 - **Contraseña:** `admin123`
 
-⚠️ **IMPORTANTE:** Cambia la contraseña por defecto después del primer inicio de sesión.
+⚠️ **IMPORTANTE:** Las credenciales por defecto están ocultas en la interfaz por seguridad. Debes cambiar la contraseña inmediatamente después del primer inicio de sesión.
 
 ## 🚀 Cómo Usar el Sistema
 
@@ -50,6 +50,14 @@ Para administrar propiedades:
    - Usuario: `admin`
    - Contraseña: `admin123`
    - Click en "Iniciar Sesión"
+
+2. **Cambiar Contraseña (PRIMER PASO RECOMENDADO):**
+   - Después de iniciar sesión, click en "Cambiar Contraseña" en la navegación
+   - Ingresa tu contraseña actual: `admin123`
+   - Ingresa tu nueva contraseña (mínimo 6 caracteres)
+   - Confirma la nueva contraseña
+   - Click en "Cambiar Contraseña"
+   - ¡Listo! Tu contraseña ha sido actualizada de forma segura
 
 2. **Funciones Disponibles:**
    - **Registrar Propiedad:** Click en "Registrar Nueva Propiedad"
@@ -86,42 +94,35 @@ Para administrar propiedades:
 - `/editar/<id>` - Requiere login
 - `/eliminar/<id>` - Requiere login (POST)
 - `/logout` - Requiere login
+- `/cambiar_password` - Requiere login
 
 ### **Encriptación:**
 - Contraseñas almacenadas con `werkzeug.security.generate_password_hash`
 - Verificación con `werkzeug.security.check_password_hash`
+- Cambio de contraseña seguro con verificación de contraseña actual
 
 ### **Sesiones:**
 - Gestión de sesiones con Flask-Login
 - `login_required` decorator para protección
 - Redirección automática a login si no está autenticado
 
-## 📋 Próximos Pasos (Opcionales)
+### **Gestión de Archivos:**
+- La carpeta `imagenes_propiedades` se crea automáticamente si no existe
+- Esto soluciona el error `FileNotFoundError` en el servidor de Render
+- Los nombres de archivos incluyen timestamp para evitar duplicados
 
-### **Cambiar Contraseña por Defecto:**
-Para mayor seguridad, puedes crear una función para cambiar la contraseña:
+## 🔧 Soluciones Implementadas
 
-```python
-@app.route('/cambiar_password', methods=['GET', 'POST'])
-@login_required
-def cambiar_password():
-    if request.method == 'POST':
-        nueva_password = request.form['nueva_password']
-        password_hash = generate_password_hash(nueva_password)
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('UPDATE usuarios SET password_hash = %s WHERE id = %s', 
-                   (password_hash, current_user.id))
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        flash('Contraseña cambiada exitosamente')
-        return redirect(url_for('index'))
-    
-    return render_template('cambiar_password.html')
-```
+### **Problema de Carpeta de Imágenes:**
+- **Error Original:** `FileNotFoundError: [Errno 2] No such file or directory: 'imagenes_propiedades/...'`
+- **Solución:** El código ahora verifica si la carpeta existe y la crea automáticamente con `os.makedirs()`
+- **Resultado:** Ya no habrá errores al subir imágenes en el servidor de Render
+
+### **Seguridad de Contraseñas:**
+- **Problema Original:** Credenciales visibles en la página de login
+- **Solución:** Credenciales ocultas de la interfaz pública
+- **Funcionalidad Nueva:** Sistema para cambiar contraseña de forma segura
+- **Resultado:** Mayor seguridad para los administradores
 
 ### **Crear Múltiples Usuarios:**
 Puedes agregar más usuarios administradores desde la base de datos o crear una interfaz de gestión de usuarios.
@@ -138,7 +139,9 @@ Después del deploy en Render:
 2. **Acceso Admin:**
    - Inicia sesión con admin/admin123
    - Verifica que APAREZCAN los botones de administración
+   - **IMPORTANTE:** Click en "Cambiar Contraseña" y actualiza tu contraseña
    - Prueba registrar, editar y eliminar propiedades
+   - Verifica que las imágenes se guarden correctamente (sin error de carpeta)
    - Cierra sesión y verifica que desaparezcan los botones
 
 ## ⚠️ Notas Importantes

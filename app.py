@@ -16,6 +16,11 @@ app.secret_key = os.getenv('SECRET_KEY', 'tu_clave_secreta_aqui')
 app.config['UPLOAD_FOLDER'] = 'imagenes_propiedades'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
+# Crear carpeta de uploads si no existe
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+    print(f"Carpeta '{app.config['UPLOAD_FOLDER']}' creada automáticamente")
+
 # Configuración de base de datos
 DATABASE_URL = os.getenv('DATABASE_URL')
 
@@ -161,6 +166,44 @@ def logout():
     logout_user()
     flash('Has cerrado sesión exitosamente')
     return redirect(url_for('index'))
+
+@app.route('/cambiar_password', methods=['GET', 'POST'])
+@login_required
+def cambiar_password():
+    if request.method == 'POST':
+        password_actual = request.form['password_actual']
+        nueva_password = request.form['nueva_password']
+        confirmar_password = request.form['confirmar_password']
+        
+        # Verificar que la nueva contraseña coincida
+        if nueva_password != confirmar_password:
+            flash('Las contraseñas nuevas no coinciden')
+            return render_template('cambiar_password.html')
+        
+        # Verificar contraseña actual
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM usuarios WHERE id = %s', (current_user.id,))
+        user = cur.fetchone()
+        
+        if not check_password_hash(user['password_hash'], password_actual):
+            flash('La contraseña actual es incorrecta')
+            cur.close()
+            conn.close()
+            return render_template('cambiar_password.html')
+        
+        # Actualizar contraseña
+        nuevo_hash = generate_password_hash(nueva_password)
+        cur.execute('UPDATE usuarios SET password_hash = %s WHERE id = %s', 
+                   (nuevo_hash, current_user.id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        flash('Contraseña cambiada exitosamente')
+        return redirect(url_for('index'))
+    
+    return render_template('cambiar_password.html')
 
 @app.route('/registrar', methods=['GET', 'POST'])
 @login_required
