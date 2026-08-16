@@ -61,3 +61,4 @@ verify_git.bat
 test_migration.py
 *_cleanup.bat
 upload_auth.bat
+upload_youtube.bat
