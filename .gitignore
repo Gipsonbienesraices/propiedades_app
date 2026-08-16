@@ -53,3 +53,9 @@ Thumbs.db
 test.py
 propiedades.db
 setup_git.bat
+*_setup.bat
+*_add_all.bat
+check_files.bat
+force_add_all.bat
+verify_git.bat
+test_migration.py
