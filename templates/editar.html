@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Propiedad - Sistema de Propiedades</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="mb-0">Editar Propiedad</h2>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        <form action="{{ url_for('editar', propiedad_id=propiedad.id) }}" method="POST" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="titulo" class="form-label">Título</label>
+                                <input type="text" class="form-control" id="titulo" name="titulo" value="{{ propiedad.titulo }}" required>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="precio" class="form-label">Precio</label>
+                                    <input type="number" class="form-control" id="precio" name="precio" step="0.01" value="{{ propiedad.precio }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="tipo_propiedad" class="form-label">Tipo de Propiedad</label>
+                                    <select class="form-select" id="tipo_propiedad" name="tipo_propiedad" required onchange="toggleCamposTerreno()">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Casa" {% if propiedad.tipo_propiedad == 'Casa' %}selected{% endif %}>Casa</option>
+                                        <option value="Departamento" {% if propiedad.tipo_propiedad == 'Departamento' %}selected{% endif %}>Departamento</option>
+                                        <option value="Terreno" {% if propiedad.tipo_propiedad == 'Terreno' %}selected{% endif %}>Terreno</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="ubicacion" class="form-label">Ubicación</label>
+                                <input type="text" class="form-control" id="ubicacion" name="ubicacion" value="{{ propiedad.ubicacion }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="descripcion" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="descripcion" name="descripcion" rows="4">{{ propiedad.descripcion }}</textarea>
+                            </div>
+                            
+                            <div class="row" id="campos_construccion" style="{% if propiedad.tipo_propiedad == 'Terreno' %}display: none;{% endif %}">
+                                <div class="col-md-6 mb-3">
+                                    <label for="recamaras" class="form-label">Recámaras</label>
+                                    <input type="number" class="form-control" id="recamaras" name="recamaras" min="0" value="{{ propiedad.recamaras }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="banos" class="form-label">Baños</label>
+                                    <input type="number" class="form-control" id="banos" name="banos" min="0" step="0.5" value="{{ propiedad.banos }}">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Operación</label>
+                                <input type="text" class="form-control" value="{{ propiedad.operacion }}" readonly>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="imagenes" class="form-label">Agregar Nuevas Imágenes</label>
+                                <input type="file" class="form-control" id="imagenes" name="imagenes" multiple accept="image/*">
+                                <div class="form-text">Puedes seleccionar múltiples imágenes adicionales</div>
+                            </div>
+                            
+                            {% if imagenes %}
+                            <div class="mb-3">
+                                <label class="form-label">Imágenes Actuales (selecciona para eliminar)</label>
+                                <div class="row">
+                                    {% for imagen in imagenes %}
+                                    <div class="col-md-3 mb-2">
+                                        <div class="card">
+                                            <img src="{{ url_for('uploaded_file', filename=imagen.ruta) }}" class="card-img-top" style="height: 100px; object-fit: cover;">
+                                            <div class="card-body p-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="eliminar_imagenes" value="{{ imagen.id }}" id="img_{{ imagen.id }}">
+                                                    <label class="form-check-label small" for="img_{{ imagen.id }}">Eliminar</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Actualizar Propiedad</button>
+                                <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleCamposTerreno() {
+            const tipoPropiedad = document.getElementById('tipo_propiedad').value;
+            const camposConstruccion = document.getElementById('campos_construccion');
+            const recamaras = document.getElementById('recamaras');
+            const banos = document.getElementById('banos');
+            
+            if (tipoPropiedad === 'Terreno') {
+                camposConstruccion.style.display = 'none';
+                recamaras.value = '';
+                banos.value = '';
+            } else {
+                camposConstruccion.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
