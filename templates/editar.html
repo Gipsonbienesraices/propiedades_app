@@ -101,6 +101,14 @@
                             </div>
                             {% endif %}
                             
+                            <div class="mb-3">
+                                <label for="youtube_url" class="form-label">Enlace de YouTube (Opcional)</label>
+                                <input type="url" class="form-control" id="youtube_url" name="youtube_url" 
+                                       placeholder="https://www.youtube.com/watch?v=..." 
+                                       value="{{ propiedad.youtube_url if propiedad.youtube_url else '' }}">
+                                <div class="form-text">Agrega un video de YouTube para mostrar un tour de la propiedad</div>
+                            </div>
+                            
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">Actualizar Propiedad</button>
                                 <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>

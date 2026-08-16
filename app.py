@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import os
+import re
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from werkzeug.utils import secure_filename
@@ -54,6 +55,27 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def extract_youtube_id(url):
+    """Extrae el ID del video de YouTube de varios formatos de URL"""
+    if not url:
+        return None
+    
+    import re
+    
+    # Patrones para diferentes formatos de YouTube
+    patterns = [
+        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
+        r'youtube\.com\/watch\?.*v=([^&\n?#]+)',
+        r'youtu\.be\/([^&\n?#]+)'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    
+    return None
 
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -217,6 +239,7 @@ def registrar():
         banos = request.form.get('banos')
         tipo_propiedad = request.form['tipo_propiedad']
         operacion = 'Venta'  # Fijo como solicitado
+        youtube_url = request.form.get('youtube_url')  # Campo opcional de YouTube
         
         # Manejar campos opcionales para terrenos
         if tipo_propiedad == 'Terreno':
@@ -226,14 +249,19 @@ def registrar():
             recamaras = int(recamaras) if recamaras else None
             banos = int(banos) if banos else None
         
+        # Procesar URL de YouTube para obtener el ID del video
+        youtube_video_id = None
+        if youtube_url:
+            youtube_video_id = extract_youtube_id(youtube_url)
+        
         fecha_creacion = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # Guardar propiedad en la base de datos
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            'INSERT INTO propiedades (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id',
-            (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion)
+            'INSERT INTO propiedades (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion, youtube_url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id',
+            (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion, youtube_video_id)
         )
         propiedad_id = cur.fetchone()['id']
         
@@ -290,6 +318,7 @@ def editar(propiedad_id):
         banos = request.form.get('banos')
         tipo_propiedad = request.form['tipo_propiedad']
         operacion = 'Venta'
+        youtube_url = request.form.get('youtube_url')
         
         if tipo_propiedad == 'Terreno':
             recamaras = None
@@ -298,12 +327,17 @@ def editar(propiedad_id):
             recamaras = int(recamaras) if recamaras else None
             banos = int(banos) if banos else None
         
+        # Procesar URL de YouTube
+        youtube_video_id = None
+        if youtube_url:
+            youtube_video_id = extract_youtube_id(youtube_url)
+        
         # Actualizar propiedad
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            'UPDATE propiedades SET titulo = %s, precio = %s, ubicacion = %s, descripcion = %s, recamaras = %s, banos = %s, tipo_propiedad = %s WHERE id = %s',
-            (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, propiedad_id)
+            'UPDATE propiedades SET titulo = %s, precio = %s, ubicacion = %s, descripcion = %s, recamaras = %s, banos = %s, tipo_propiedad = %s, youtube_url = %s WHERE id = %s',
+            (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, youtube_video_id, propiedad_id)
         )
         
         # Manejar nuevas imágenes

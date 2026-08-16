@@ -39,10 +39,18 @@ def create_tables():
                 banos INTEGER,
                 tipo_propiedad TEXT NOT NULL,
                 operacion TEXT NOT NULL,
-                fecha_creacion TEXT NOT NULL
+                fecha_creacion TEXT NOT NULL,
+                youtube_url TEXT
             )
         ''')
         print("✓ Tabla 'propiedades' creada/verificada")
+        
+        # Agregar columna youtube_url si no existe (para tablas existentes)
+        try:
+            cur.execute('ALTER TABLE propiedades ADD COLUMN IF NOT EXISTS youtube_url TEXT')
+            print("✓ Columna 'youtube_url' agregada a tabla 'propiedades'")
+        except Exception as e:
+            print(f"  (La columna ya existe o error: {e})")
         
         # Crear tabla de imágenes
         cur.execute('''
