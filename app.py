@@ -1,10 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import os
 import re
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from dotenv import load_dotenv
@@ -14,13 +12,6 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tu_clave_secreta_aqui')
-app.config['UPLOAD_FOLDER'] = 'imagenes_propiedades'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
-
-# Crear carpeta de uploads si no existe
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
-    print(f"Carpeta '{app.config['UPLOAD_FOLDER']}' creada automáticamente")
 
 # Configuración de base de datos
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -105,7 +96,8 @@ def init_db():
             banos INTEGER,
             tipo_propiedad TEXT NOT NULL,
             operacion TEXT NOT NULL,
-            fecha_creacion TEXT NOT NULL
+            fecha_creacion TEXT NOT NULL,
+            youtube_url TEXT
         )
     ''')
     
@@ -113,7 +105,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS imagenes (
             id SERIAL PRIMARY KEY,
             propiedad_id INTEGER NOT NULL,
-            ruta TEXT NOT NULL,
+            url TEXT NOT NULL,
+            es_principal BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (propiedad_id) REFERENCES propiedades (id)
         )
     ''')
@@ -131,10 +124,6 @@ def init_db():
     cur.close()
     conn.close()
 
-@app.route('/imagenes_propiedades/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
 @app.route('/propiedad/<int:propiedad_id>')
 def ver_propiedad(propiedad_id):
     conn = get_db_connection()
@@ -147,13 +136,13 @@ def ver_propiedad(propiedad_id):
         return redirect(url_for('index'))
     
     # Obtener imágenes
-    cur.execute('SELECT ruta FROM imagenes WHERE propiedad_id = %s', (propiedad_id,))
+    cur.execute('SELECT url FROM imagenes WHERE propiedad_id = %s ORDER BY es_principal DESC', (propiedad_id,))
     imagenes = cur.fetchall()
     cur.close()
     conn.close()
     
     prop_dict = dict(propiedad)
-    prop_dict['imagenes'] = [img['ruta'] for img in imagenes]
+    prop_dict['imagenes'] = [img['url'] for img in imagenes]
     
     return render_template('ver_propiedad.html', propiedad=prop_dict)
 
@@ -171,12 +160,12 @@ def index():
     for prop in propiedades:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT ruta FROM imagenes WHERE propiedad_id = %s', (prop['id'],))
+        cur.execute('SELECT url FROM imagenes WHERE propiedad_id = %s ORDER BY es_principal DESC', (prop['id'],))
         imagenes = cur.fetchall()
         cur.close()
         conn.close()
         prop_dict = dict(prop)
-        prop_dict['imagenes'] = [img['ruta'] for img in imagenes]
+        prop_dict['imagenes'] = [img['url'] for img in imagenes]
         propiedades_con_imagenes.append(prop_dict)
     
     return render_template('index.html', propiedades=propiedades_con_imagenes)
@@ -263,6 +252,10 @@ def registrar():
         operacion = 'Venta'  # Fijo como solicitado
         youtube_url = request.form.get('youtube_url')  # Campo opcional de YouTube
         
+        # Imágenes desde URLs
+        imagen_principal = request.form.get('imagen_principal')
+        galeria_urls = request.form.get('galeria_urls')
+        
         # Manejar campos opcionales para terrenos
         if tipo_propiedad == 'Terreno':
             recamaras = None
@@ -287,21 +280,20 @@ def registrar():
         )
         propiedad_id = cur.fetchone()['id']
         
-        # Guardar imágenes
-        archivos = request.files.getlist('imagenes')
-        for file in archivos:
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Agregar timestamp para evitar nombres duplicados
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{timestamp}_{filename}"
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(filepath)
-                
-                # Guardar ruta en la base de datos
+        # Guardar imagen principal si existe
+        if imagen_principal:
+            cur.execute(
+                'INSERT INTO imagenes (propiedad_id, url, es_principal) VALUES (%s, %s, %s)',
+                (propiedad_id, imagen_principal, True)
+            )
+        
+        # Guardar URLs de galería si existen
+        if galeria_urls:
+            urls_lista = [url.strip() for url in galeria_urls.split(',') if url.strip()]
+            for url in urls_lista:
                 cur.execute(
-                    'INSERT INTO imagenes (propiedad_id, ruta) VALUES (%s, %s)',
-                    (propiedad_id, filename)
+                    'INSERT INTO imagenes (propiedad_id, url, es_principal) VALUES (%s, %s, %s)',
+                    (propiedad_id, url, False)
                 )
         
         conn.commit()
@@ -342,6 +334,10 @@ def editar(propiedad_id):
         operacion = 'Venta'
         youtube_url = request.form.get('youtube_url')
         
+        # Imágenes desde URLs
+        imagen_principal = request.form.get('imagen_principal')
+        galeria_urls = request.form.get('galeria_urls')
+        
         if tipo_propiedad == 'Terreno':
             recamaras = None
             banos = None
@@ -362,37 +358,37 @@ def editar(propiedad_id):
             (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, youtube_video_id, propiedad_id)
         )
         
-        # Manejar nuevas imágenes
-        archivos = request.files.getlist('imagenes')
-        for file in archivos:
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{timestamp}_{filename}"
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(filepath)
-                
-                cur.execute(
-                    'INSERT INTO imagenes (propiedad_id, ruta) VALUES (%s, %s)',
-                    (propiedad_id, filename)
-                )
-        
         # Eliminar imágenes seleccionadas
         imagenes_a_eliminar = request.form.getlist('eliminar_imagenes')
         for img_id in imagenes_a_eliminar:
-            # Eliminar archivo del sistema
-            cur.execute('SELECT ruta FROM imagenes WHERE id = %s', (img_id,))
-            img = cur.fetchone()
-            if img:
-                try:
-                    img_path = os.path.join(app.config['UPLOAD_FOLDER'], img['ruta'])
-                    if os.path.exists(img_path):
-                        os.remove(img_path)
-                except:
-                    pass  # Si falla la eliminación del archivo, continuamos
-            
-            # Eliminar registro de la base de datos
             cur.execute('DELETE FROM imagenes WHERE id = %s', (img_id,))
+        
+        # Actualizar o agregar imagen principal
+        if imagen_principal:
+            # Verificar si ya existe imagen principal
+            cur.execute('SELECT id FROM imagenes WHERE propiedad_id = %s AND es_principal = TRUE', (propiedad_id,))
+            existing_principal = cur.fetchone()
+            
+            if existing_principal:
+                cur.execute('UPDATE imagenes SET url = %s WHERE id = %s', (imagen_principal, existing_principal['id']))
+            else:
+                cur.execute(
+                    'INSERT INTO imagenes (propiedad_id, url, es_principal) VALUES (%s, %s, %s)',
+                    (propiedad_id, imagen_principal, True)
+                )
+        
+        # Actualizar galería de imágenes
+        if galeria_urls:
+            # Eliminar imágenes de galería existentes
+            cur.execute('DELETE FROM imagenes WHERE propiedad_id = %s AND es_principal = FALSE', (propiedad_id,))
+            
+            # Agregar nuevas URLs de galería
+            urls_lista = [url.strip() for url in galeria_urls.split(',') if url.strip()]
+            for url in urls_lista:
+                cur.execute(
+                    'INSERT INTO imagenes (propiedad_id, url, es_principal) VALUES (%s, %s, %s)',
+                    (propiedad_id, url, False)
+                )
         
         conn.commit()
         cur.close()
@@ -409,20 +405,7 @@ def eliminar(propiedad_id):
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Obtener imágenes para eliminar archivos
-    cur.execute('SELECT ruta FROM imagenes WHERE propiedad_id = %s', (propiedad_id,))
-    imagenes = cur.fetchall()
-    
-    # Eliminar archivos del sistema
-    for img in imagenes:
-        try:
-            img_path = os.path.join(app.config['UPLOAD_FOLDER'], img['ruta'])
-            if os.path.exists(img_path):
-                os.remove(img_path)
-        except:
-            pass
-    
-    # Eliminar imágenes de la base de datos
+    # Eliminar imágenes de la base de datos (ya no eliminamos archivos del sistema)
     cur.execute('DELETE FROM imagenes WHERE propiedad_id = %s', (propiedad_id,))
     
     # Eliminar propiedad

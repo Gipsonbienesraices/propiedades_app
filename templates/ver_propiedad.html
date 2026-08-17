@@ -40,10 +40,11 @@
                         <div class="carousel-inner">
                             {% for imagen in propiedad.imagenes %}
                                 <div class="carousel-item {% if loop.first %}active{% endif %}">
-                                    <img src="{{ url_for('uploaded_file', filename=imagen) }}" 
+                                    <img src="{{ imagen }}" 
                                          class="d-block w-100" 
                                          alt="Imagen de {{ propiedad.titulo }}"
-                                         style="height: 400px; object-fit: cover;">
+                                         style="height: 400px; object-fit: cover;"
+                                         onerror="this.src='https://via.placeholder.com/800x400?text=Imagen+no+disponible'">
                                 </div>
                             {% endfor %}
                         </div>

@@ -52,16 +52,34 @@ def create_tables():
         except Exception as e:
             print(f"  (La columna ya existe o error: {e})")
         
-        # Crear tabla de imágenes
+        # Crear tabla de imágenes con URLs externas
         cur.execute('''
             CREATE TABLE IF NOT EXISTS imagenes (
                 id SERIAL PRIMARY KEY,
                 propiedad_id INTEGER NOT NULL,
-                ruta TEXT NOT NULL,
+                url TEXT NOT NULL,
+                es_principal BOOLEAN DEFAULT FALSE,
                 FOREIGN KEY (propiedad_id) REFERENCES propiedades (id)
             )
         ''')
         print("✓ Tabla 'imagenes' creada/verificada")
+        
+        # Migrar datos existentes si es necesario
+        try:
+            # Verificar si la columna 'ruta' existe y renombrarla a 'url'
+            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'imagenes' AND column_name = 'ruta'")
+            if cur.fetchone():
+                cur.execute('ALTER TABLE imagenes RENAME COLUMN ruta TO url')
+                print("✓ Columna 'ruta' renombrada a 'url' en tabla 'imagenes'")
+        except Exception as e:
+            print(f"  (Migración de columnas: {e})")
+        
+        # Agregar columna es_principal si no existe
+        try:
+            cur.execute('ALTER TABLE imagenes ADD COLUMN IF NOT EXISTS es_principal BOOLEAN DEFAULT FALSE')
+            print("✓ Columna 'es_principal' agregada a tabla 'imagenes'")
+        except Exception as e:
+            print(f"  (La columna ya existe o error: {e})")
         
         # Crear usuario admin por defecto si no existe
         cur.execute("SELECT * FROM usuarios WHERE username = 'admin'")
