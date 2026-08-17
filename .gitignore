@@ -62,3 +62,4 @@ test_migration.py
 *_cleanup.bat
 upload_auth.bat
 upload_youtube.bat
+upload_youtube_fixes.bat
