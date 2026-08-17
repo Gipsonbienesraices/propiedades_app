@@ -135,6 +135,28 @@ def init_db():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/propiedad/<int:propiedad_id>')
+def ver_propiedad(propiedad_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM propiedades WHERE id = %s', (propiedad_id,))
+    propiedad = cur.fetchone()
+    
+    if not propiedad:
+        flash('Propiedad no encontrada')
+        return redirect(url_for('index'))
+    
+    # Obtener imágenes
+    cur.execute('SELECT ruta FROM imagenes WHERE propiedad_id = %s', (propiedad_id,))
+    imagenes = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    prop_dict = dict(propiedad)
+    prop_dict['imagenes'] = [img['ruta'] for img in imagenes]
+    
+    return render_template('ver_propiedad.html', propiedad=prop_dict)
+
 @app.route('/')
 def index():
     conn = get_db_connection()
