@@ -96,7 +96,7 @@
                                     {% for imagen in imagenes %}
                                     <div class="col-md-3 mb-2">
                                         <div class="card">
-                                            <img src="{{ imagen.url }}" class="card-img-top" style="height: 100px; object-fit: cover;">
+                                            <img src="{{ imagen.url }}" class="card-img-top" style="height: 100px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/100?text=Error'">
                                             <div class="card-body p-2">
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" name="eliminar_imagenes" value="{{ imagen.id }}" id="img_{{ imagen.id }}">
@@ -110,6 +110,10 @@
                                     </div>
                                     {% endfor %}
                                 </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <small>Esta propiedad no tiene imágenes. Agrega URLs de imágenes arriba.</small>
                             </div>
                             {% endif %}
                             
