@@ -332,6 +332,8 @@ def editar(propiedad_id):
             flash('Propiedad no encontrada')
             return redirect(url_for('index'))
         
+        print(f"Propiedad obtenida: {propiedad}")
+        
         # Obtener imágenes actuales con manejo de errores para compatibilidad
         imagenes_actuales = []
         try:
@@ -339,9 +341,11 @@ def editar(propiedad_id):
             cur.execute('SELECT * FROM imagenes WHERE propiedad_id = %s', (propiedad_id,))
             rows = cur.fetchall()
             print(f"Imágenes obtenidas: {len(rows)}")
+            print(f"Filas de imágenes: {rows}")
             
             # Procesar resultados para asegurar que tengan las columnas esperadas
             for row in rows:
+                print(f"Procesando fila: {row}")
                 if 'url' in row:
                     imagenes_actuales.append(row)
                 elif 'ruta' in row:
@@ -350,10 +354,15 @@ def editar(propiedad_id):
                     row_dict['url'] = row_dict['ruta']
                     row_dict['es_principal'] = row_dict.get('es_principal', False)
                     imagenes_actuales.append(row_dict)
+                else:
+                    print(f"Fila sin columnas esperadas: {row.keys()}")
                     
         except Exception as e:
             print(f"Error al obtener imágenes: {e}")
             imagenes_actuales = []
+        
+        print(f"Imágenes actuales procesadas: {len(imagenes_actuales)}")
+        print(f"Imágenes actuales: {imagenes_actuales}")
         
         cur.close()
         conn.close()
@@ -447,10 +456,13 @@ def editar(propiedad_id):
                 flash('Error al actualizar la propiedad. Por favor intenta nuevamente.')
                 return redirect(url_for('index'))
         
+        print(f"Renderizando editar.html con propiedad: {propiedad} y imagenes: {imagenes_actuales}")
         return render_template('editar.html', propiedad=propiedad, imagenes=imagenes_actuales)
         
     except Exception as e:
         print(f"Error en editar: {e}")
+        import traceback
+        traceback.print_exc()
         flash('Error al cargar la propiedad para edición')
         return redirect(url_for('index'))
 
