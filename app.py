@@ -48,13 +48,11 @@ def extract_youtube_id(url):
     if not url:
         return None
     
-    # Patrones para diferentes formatos de YouTube
+    # Patrones exclusivos para YouTube Shorts (formato vertical)
     patterns = [
-        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
-        r'youtube\.com\/watch\?.*v=([^&\n?#]+)',
-        r'youtu\.be\/([^&\n?#]+)',
-        r'youtube\.com\/shorts\/([^&\n?#]+)',  # YouTube Shorts
-        r'youtube\.com\/shorts\/([^&\n?#]+)'   # YouTube Shorts con www
+        r'youtube\.com\/shorts\/([^&\n?#]+)',   # YouTube Shorts sin www
+        r'youtube\.com\/shorts\/([^&\n?#]+)',   # YouTube Shorts con www
+        r'youtu\.be\/shorts\/([^&\n?#]+)'     # youtu.be shorts
     ]
     
     for pattern in patterns:

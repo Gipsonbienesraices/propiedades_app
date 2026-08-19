@@ -1,5 +1,5 @@
 @echo off
-echo Subiendo correcciones de YouTube Shorts y editar...
+echo Subiendo configuracion exclusiva para YouTube Shorts...
 echo.
 
 cd /d C:\Users\USER\propiedades_app
@@ -12,8 +12,8 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo Haciendo commit con correcciones...
-"C:\Program Files\Git\bin\git.exe" commit -m "Add YouTube Shorts support and fix editar image loading logic"
+echo Haciendo commit con configuracion Shorts-only...
+"C:\Program Files\Git\bin\git.exe" commit -m "Switch to YouTube Shorts only - remove horizontal video support"
 if %errorlevel% neq 0 (
     echo No hay cambios o error al hacer commit
     pause
@@ -30,20 +30,20 @@ if %errorlevel% neq 0 (
 
 echo.
 echo ==========================================
-echo ¡Correcciones subidas exitosamente!
+echo ¡Configuracion Shorts-only subida!
 echo ==========================================
 echo.
 echo Cambios implementados:
-echo - Soporte para YouTube Shorts
-echo - Mejor manejo de columnas de imagenes
-echo - Correccion de logica de separacion de URLs
-echo - Debug prints para solucionar errores
-echo - Filtros Jinja mejorados en editar.html
+echo - Soporte exclusivo para YouTube Shorts
+echo - Eliminado soporte para videos horizontales
+echo - Aspect ratio vertical (9:16) en iframes
+echo - Enlaces actualizados a /shorts/
+echo - Contenedores optimizados para formato vertical
 echo.
 echo Render detectara los cambios y redeployara automaticamente.
 echo Despues del deploy:
-echo 1. YouTube Shorts seran reconocidos
-echo 2. El formulario de editar deberia funcionar
-echo 3 - Los logs mostraran informacion de debug
+echo 1. Solo YouTube Shorts seran reconocidos
+echo 2 - Videos apareceran en formato vertical
+echo 3 - Enlaces apuntaran a youtube.com/shorts/
 echo.
 pause
