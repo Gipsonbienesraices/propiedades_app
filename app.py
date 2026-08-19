@@ -52,7 +52,9 @@ def extract_youtube_id(url):
     patterns = [
         r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)',
         r'youtube\.com\/watch\?.*v=([^&\n?#]+)',
-        r'youtu\.be\/([^&\n?#]+)'
+        r'youtu\.be\/([^&\n?#]+)',
+        r'youtube\.com\/shorts\/([^&\n?#]+)',  # YouTube Shorts
+        r'youtube\.com\/shorts\/([^&\n?#]+)'   # YouTube Shorts con www
     ]
     
     for pattern in patterns:
@@ -335,17 +337,25 @@ def editar(propiedad_id):
         # Obtener imágenes actuales con manejo de errores para compatibilidad
         imagenes_actuales = []
         try:
+            # Primero intentar con columnas nuevas
             cur.execute('SELECT * FROM imagenes WHERE propiedad_id = %s', (propiedad_id,))
-            imagenes_actuales = cur.fetchall()
+            rows = cur.fetchall()
+            print(f"Imágenes obtenidas: {len(rows)}")
+            
+            # Procesar resultados para asegurar que tengan las columnas esperadas
+            for row in rows:
+                if 'url' in row:
+                    imagenes_actuales.append(row)
+                elif 'ruta' in row:
+                    # Convertir formato antiguo a nuevo
+                    row_dict = dict(row)
+                    row_dict['url'] = row_dict['ruta']
+                    row_dict['es_principal'] = row_dict.get('es_principal', False)
+                    imagenes_actuales.append(row_dict)
+                    
         except Exception as e:
             print(f"Error al obtener imágenes: {e}")
-            # Si falla, intentar con columna antigua 'ruta'
-            try:
-                cur.execute('SELECT id, propiedad_id, ruta as url, FALSE as es_principal FROM imagenes WHERE propiedad_id = %s', (propiedad_id,))
-                imagenes_actuales = cur.fetchall()
-            except Exception as e2:
-                print(f"Error al obtener imágenes con formato antiguo: {e2}")
-                imagenes_actuales = []
+            imagenes_actuales = []
         
         cur.close()
         conn.close()

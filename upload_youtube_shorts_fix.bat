@@ -1,5 +1,5 @@
 @echo off
-echo Subiendo correcciones de funcion editar...
+echo Subiendo correcciones de YouTube Shorts y editar...
 echo.
 
 cd /d C:\Users\USER\propiedades_app
@@ -12,8 +12,8 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo Haciendo commit con correcciones de editar...
-"C:\Program Files\Git\bin\git.exe" commit -m "Fix editar function with error handling for old data and missing images"
+echo Haciendo commit con correcciones...
+"C:\Program Files\Git\bin\git.exe" commit -m "Add YouTube Shorts support and fix editar image loading logic"
 if %errorlevel% neq 0 (
     echo No hay cambios o error al hacer commit
     pause
@@ -30,21 +30,20 @@ if %errorlevel% neq 0 (
 
 echo.
 echo ==========================================
-echo ¡Correcciones de editar subidas exitosamente!
+echo ¡Correcciones subidas exitosamente!
 echo ==========================================
 echo.
 echo Cambios implementados:
-echo - Manejo de errores try/except en editar
-echo - Compatibilidad con datos antiguos (columna ruta)
-echo - Compatibilidad con propiedades sin imagenes
-echo - Manejo de errores en index y ver_propiedad
-echo - Placeholder si las URLs de imagenes fallan
-echo - Mensajes de error informativos
+echo - Soporte para YouTube Shorts
+echo - Mejor manejo de columnas de imagenes
+echo - Correccion de logica de separacion de URLs
+echo - Debug prints para solucionar errores
+echo - Filtros Jinja mejorados en editar.html
 echo.
 echo Render detectara los cambios y redeployara automaticamente.
 echo Despues del deploy:
-echo 1. La funcion editar ya no colapsara
-echo 2. Funcionara con datos antiguos
-echo 3. Funcionara con propiedades sin imagenes
+echo 1. YouTube Shorts seran reconocidos
+echo 2. El formulario de editar deberia funcionar
+echo 3 - Los logs mostraran informacion de debug
 echo.
 pause
