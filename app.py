@@ -174,7 +174,22 @@ def index():
                 prop_dict['imagenes'] = []
                 propiedades_con_imagenes.append(prop_dict)
         
-        return render_template('index.html', propiedades=propiedades_con_imagenes)
+        # Agrupar propiedades por tipo
+        propiedades_por_tipo = {
+            'Casa': [],
+            'Terreno': [],
+            'Departamento': [],
+            'Otro': []
+        }
+        
+        for prop in propiedades_con_imagenes:
+            tipo = prop.get('tipo_propiedad', 'Otro')
+            if tipo in propiedades_por_tipo:
+                propiedades_por_tipo[tipo].append(prop)
+            else:
+                propiedades_por_tipo['Otro'].append(prop)
+        
+        return render_template('index.html', propiedades_por_tipo=propiedades_por_tipo)
     except Exception as e:
         print(f"Error en index: {e}")
         return render_template('index.html', propiedades=[])
