@@ -99,8 +99,19 @@ def init_db():
     # Agregar columna reservada si no existe (para bases de datos existentes)
     try:
         cur.execute('ALTER TABLE propiedades ADD COLUMN IF NOT EXISTS reservada BOOLEAN DEFAULT FALSE')
+        print("Columna reservada verificada/agregada correctamente")
     except Exception as e:
-        print(f"Columna reservada ya existe o error al agregar: {e}")
+        print(f"Error al agregar columna reservada: {e}")
+        # Intentar método alternativo para PostgreSQL que no soporta IF NOT EXISTS
+        try:
+            cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'propiedades' AND column_name = 'reservada'")
+            if not cur.fetchone():
+                cur.execute('ALTER TABLE propiedades ADD COLUMN reservada BOOLEAN DEFAULT FALSE')
+                print("Columna reservada agregada usando método alternativo")
+            else:
+                print("Columna reservada ya existe")
+        except Exception as e2:
+            print(f"Error en método alternativo: {e2}")
     
     cur.execute('''
         CREATE TABLE IF NOT EXISTS imagenes (
@@ -522,6 +533,12 @@ def eliminar(propiedad_id):
         flash('Error al eliminar la propiedad')
         return redirect(url_for('index'))
 
-if __name__ == '__main__':
+# Ejecutar init_db al inicio de la aplicación (importante para Render)
+try:
     init_db()
+    print("Base de datos inicializada correctamente")
+except Exception as e:
+    print(f"Error al inicializar base de datos: {e}")
+
+if __name__ == '__main__':
     app.run(debug=True, port=5000)
