@@ -401,7 +401,10 @@ def editar(propiedad_id):
                 tipo_propiedad = request.form['tipo_propiedad']
                 operacion = 'Venta'
                 youtube_url = request.form.get('youtube_url')
-                reservada = request.form.get('reservada') == 'on'
+                reservada_checkbox = request.form.get('reservada')
+                reservada = reservada_checkbox == 'on'
+                print(f"Checkbox reservada valor: {reservada_checkbox}")
+                print(f"Boolean reservada: {reservada}")
                 
                 # Imágenes desde URLs
                 imagen_principal = request.form.get('imagen_principal')
@@ -422,10 +425,15 @@ def editar(propiedad_id):
                 # Actualizar propiedad
                 conn = get_db_connection()
                 cur = conn.cursor()
-                cur.execute(
-                    'UPDATE propiedades SET titulo = %s, precio = %s, ubicacion = %s, descripcion = %s, recamaras = %s, banos = %s, tipo_propiedad = %s, youtube_url = %s, reservada = %s WHERE id = %s',
-                    (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, youtube_video_id, reservada, propiedad_id)
-                )
+                try:
+                    cur.execute(
+                        'UPDATE propiedades SET titulo = %s, precio = %s, ubicacion = %s, descripcion = %s, recamaras = %s, banos = %s, tipo_propiedad = %s, youtube_url = %s, reservada = %s WHERE id = %s',
+                        (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, youtube_video_id, reservada, propiedad_id)
+                    )
+                    print("Actualización SQL ejecutada correctamente")
+                except Exception as e:
+                    print(f"Error en SQL UPDATE: {e}")
+                    raise
                 
                 # Eliminar imágenes seleccionadas
                 imagenes_a_eliminar = request.form.getlist('eliminar_imagenes')
