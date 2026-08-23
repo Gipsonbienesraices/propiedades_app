@@ -87,6 +87,11 @@
                     <div class="card-header bg-primary text-white">
                         <h4 class="mb-0">{{ propiedad.titulo }}</h4>
                     </div>
+                    {% if propiedad.reservada %}
+                    <div class="alert alert-success m-0 p-2 text-center">
+                        <strong class="text-success">✓ RESERVADA</strong>
+                    </div>
+                    {% endif %}
                     <div class="card-body">
                         <h3 class="text-primary mb-3">${{ "{:,.2f}".format(propiedad.precio) }}</h3>
                         

@@ -93,6 +93,16 @@
                                 <div class="form-text">Agrega un video de YouTube para mostrar un tour de la propiedad</div>
                             </div>
                             
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="reservada" name="reservada">
+                                    <label class="form-check-label" for="reservada">
+                                        <strong>Marcar como RESERVADA</strong>
+                                    </label>
+                                    <div class="form-text">Esta propiedad aparecerá con una etiqueta verde de "RESERVADA" en el catálogo</div>
+                                </div>
+                            </div>
+                            
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">Guardar Propiedad</button>
                                 <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>

@@ -91,9 +91,16 @@ def init_db():
             tipo_propiedad TEXT NOT NULL,
             operacion TEXT NOT NULL,
             fecha_creacion TEXT NOT NULL,
-            youtube_url TEXT
+            youtube_url TEXT,
+            reservada BOOLEAN DEFAULT FALSE
         )
     ''')
+    
+    # Agregar columna reservada si no existe (para bases de datos existentes)
+    try:
+        cur.execute('ALTER TABLE propiedades ADD COLUMN IF NOT EXISTS reservada BOOLEAN DEFAULT FALSE')
+    except Exception as e:
+        print(f"Columna reservada ya existe o error al agregar: {e}")
     
     cur.execute('''
         CREATE TABLE IF NOT EXISTS imagenes (
@@ -276,6 +283,7 @@ def registrar():
             tipo_propiedad = request.form['tipo_propiedad']
             operacion = 'Venta'
             youtube_url = request.form.get('youtube_url')
+            reservada = request.form.get('reservada') == 'on'
             
             # Imágenes desde URLs
             imagen_principal = request.form.get('imagen_principal')
@@ -300,8 +308,8 @@ def registrar():
             conn = get_db_connection()
             cur = conn.cursor()
             cur.execute(
-                'INSERT INTO propiedades (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion, youtube_url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id',
-                (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion, youtube_video_id)
+                'INSERT INTO propiedades (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion, youtube_url, reservada) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id',
+                (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, operacion, fecha_creacion, youtube_video_id, reservada)
             )
             propiedad_id = cur.fetchone()['id']
             
@@ -393,6 +401,7 @@ def editar(propiedad_id):
                 tipo_propiedad = request.form['tipo_propiedad']
                 operacion = 'Venta'
                 youtube_url = request.form.get('youtube_url')
+                reservada = request.form.get('reservada') == 'on'
                 
                 # Imágenes desde URLs
                 imagen_principal = request.form.get('imagen_principal')
@@ -414,8 +423,8 @@ def editar(propiedad_id):
                 conn = get_db_connection()
                 cur = conn.cursor()
                 cur.execute(
-                    'UPDATE propiedades SET titulo = %s, precio = %s, ubicacion = %s, descripcion = %s, recamaras = %s, banos = %s, tipo_propiedad = %s, youtube_url = %s WHERE id = %s',
-                    (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, youtube_video_id, propiedad_id)
+                    'UPDATE propiedades SET titulo = %s, precio = %s, ubicacion = %s, descripcion = %s, recamaras = %s, banos = %s, tipo_propiedad = %s, youtube_url = %s, reservada = %s WHERE id = %s',
+                    (titulo, precio, ubicacion, descripcion, recamaras, banos, tipo_propiedad, youtube_video_id, reservada, propiedad_id)
                 )
                 
                 # Eliminar imágenes seleccionadas
