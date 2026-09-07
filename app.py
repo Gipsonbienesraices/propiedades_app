@@ -515,12 +515,18 @@ def reset_password(security_token):
     # Token de seguridad temporal
     VALID_TOKEN = "reset_admin_2024_secure"
     
+    print(f"Intento de reset con token: {security_token}")
+    
     if security_token != VALID_TOKEN:
+        print("Token inválido")
         return "Token inválido", 403
     
     try:
         new_password = "Admin2024!"
         password_hash = generate_password_hash(new_password)
+        
+        print(f"Contraseña nueva: {new_password}")
+        print(f"Hash generado: {password_hash}")
         
         conn = get_db_connection()
         cur = conn.cursor()
@@ -529,6 +535,8 @@ def reset_password(security_token):
         cur.execute("SELECT * FROM usuarios WHERE username = 'admin'")
         admin_user = cur.fetchone()
         
+        print(f"Usuario admin encontrado: {admin_user is not None}")
+        
         if admin_user:
             # Actualizar contraseña
             cur.execute(
@@ -536,6 +544,13 @@ def reset_password(security_token):
                 (password_hash, 'admin')
             )
             conn.commit()
+            print("Contraseña actualizada en base de datos")
+            
+            # Verificar que se actualizó correctamente
+            cur.execute("SELECT password_hash FROM usuarios WHERE username = 'admin'")
+            updated_hash = cur.fetchone()
+            print(f"Hash en BD después de actualización: {updated_hash}")
+            
             cur.close()
             conn.close()
             
@@ -556,9 +571,13 @@ def reset_password(security_token):
         else:
             cur.close()
             conn.close()
+            print("Usuario admin no encontrado")
             return "Usuario admin no encontrado", 404
             
     except Exception as e:
+        print(f"Error en reset de contraseña: {e}")
+        import traceback
+        traceback.print_exc()
         return f"Error: {e}", 500
 
 @app.route('/eliminar/<int:propiedad_id>', methods=['POST'])
