@@ -75,3 +75,6 @@ upload_secciones.bat
 upload_reservada.bat
 upload_reservada_fix.bat
 upload_migration_fix.bat
+upload_password_reset.bat
+upload_reset_debug.bat
+remove_security_endpoint.bat
