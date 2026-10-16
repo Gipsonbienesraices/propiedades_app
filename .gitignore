@@ -78,3 +78,7 @@ upload_migration_fix.bat
 upload_password_reset.bat
 upload_reset_debug.bat
 remove_security_endpoint.bat
+
+# Archivos sensibles del bot
+bot_services/state.json
+bot_services/state.json.example

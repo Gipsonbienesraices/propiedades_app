@@ -7,6 +7,21 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from dotenv import load_dotenv
+from apscheduler.schedulers.background import BackgroundScheduler
+import asyncio
+import threading
+
+# Importar servicios del bot (modular)
+try:
+    from bot_services.scraper import FacebookScraper
+    from bot_services.lead_extractor import LeadExtractor
+    from bot_services.matchmaker import Matchmaker
+    from bot_services.commenter import AutoCommenter
+    from bot_services.database import DatabaseManager
+    BOT_AVAILABLE = True
+except ImportError:
+    BOT_AVAILABLE = False
+    print("⚠️ Módulos del bot no disponibles - Bot desactivado")
 
 # Cargar variables de entorno
 load_dotenv()
@@ -532,6 +547,83 @@ def eliminar(propiedad_id):
         print(f"Error al eliminar propiedad: {e}")
         flash('Error al eliminar la propiedad')
         return redirect(url_for('index'))
+
+# ==================== INTEGRACIÓN DEL BOT ====================
+
+def run_bot_cycle():
+    """Ejecutar ciclo completo del bot en segundo plano"""
+    if not BOT_AVAILABLE:
+        print("⚠️ Bot no disponible - ciclo omitido")
+        return
+    
+    print("🤖 Iniciando ciclo del bot...")
+    
+    async def bot_cycle():
+        try:
+            # Inicializar componentes
+            db_manager = DatabaseManager()
+            db_manager.init_tables()
+            
+            scraper = FacebookScraper()
+            extractor = LeadExtractor()
+            matchmaker = Matchmaker(db_manager)
+            commenter = AutoCommenter(db_manager)
+            
+            # Ejecutar scraping completo
+            print("🔍 Ejecutando scraping completo...")
+            scraping_success = await scraper.run_scraping_cycle()
+            
+            if scraping_success:
+                # Simular posts extraídos (en producción serían posts reales)
+                print("📊 Simulando procesamiento de posts...")
+                posts = await scraper.extract_posts()
+                
+                for post in posts:
+                    lead_data = extractor.process_post(post)
+                    await db_manager.save_lead(lead_data)
+            
+            # Ejecutar matchmaking
+            print("🔗 Ejecutando matchmaking...")
+            await matchmaker.run_matchmaking_cycle()
+            
+            # Ejecutar comentarios (limitado)
+            print("💬 Ejecutando comentarios...")
+            leads = await db_manager.get_leads_by_category(['Busca Arriendo', 'Busca Compra'])
+            # Nota: comentamos la función de comentar por seguridad
+            # await commenter.run_commenting_cycle(leads, scraper.page)
+            print("⚠️ Comentarios desactivados por seguridad inicial")
+            
+            print("✅ Ciclo del bot completado")
+            
+        except Exception as e:
+            print(f"❌ Error en ciclo del bot: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # Ejecutar en loop de eventos
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(bot_cycle())
+    loop.close()
+
+# Inicializar scheduler
+scheduler = BackgroundScheduler()
+
+# Programar ejecución del bot (cada 4 horas)
+try:
+    scheduler.add_job(
+        func=run_bot_cycle,
+        trigger="interval",
+        hours=4,
+        id='bot_cycle',
+        name='Facebook Bot Cycle'
+    )
+    scheduler.start()
+    print("✅ Bot programado para ejecutarse cada 4 horas")
+except Exception as e:
+    print(f"⚠️ Error al programar bot: {e}")
+
+# ==================== FIN INTEGRACIÓN BOT ====================
 
 # Ejecutar init_db al inicio de la aplicación (importante para Render)
 try:
